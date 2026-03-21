@@ -7,7 +7,7 @@
 #include <QDebug>
 #include "services/trackservice.h"
 #include "services/authservice.h"
-#include "services/config.h"
+#include "servers/oauthserver.h"
 
 int main(int argc, char *argv[])
 {
@@ -15,14 +15,20 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     TrackService trackService;
     AuthService authService;
+    OAuthServer oAuthServer;
 
-    if (QDateTime::currentDateTimeUtc() > Config::instance().tokenObtained.addSecs(Config::instance().expiresAt)) {
-        authService.auth();
-    }
-
+    authService.startOAuthFlow();
 
     engine.rootContext()->setContextProperty("trackService", &trackService);
     engine.rootContext()->setContextProperty("authService", &authService);
+
+    QObject::connect(&oAuthServer, &OAuthServer::codeRecieved, [&](QString code) {
+        authService.exchangeCodeForToken(code);
+    });
+
+    QObject::connect(&authService, &AuthService::tokenReady, [&](QString token){
+        qDebug() << "Token is ready, now we can play tracks!";
+    });
 
     QObject::connect(
         &engine,

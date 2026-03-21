@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QIoDevice>
 #include <QDebug>
+#include <QDir>
+#include <QStandardPaths>
 
 class Config {
 public:
@@ -14,7 +16,12 @@ public:
     }
 
     void setCredentials(QJsonObject data) {
-        QFile file(":/config.json");
+        accessToken = data["access_token"].toString();
+        refreshToken = data["refresh_token"].toString();
+        expiresAt = data["expires_in"].toInt();
+        tokenObtained = QDateTime::currentDateTimeUtc();
+
+        QFile file(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/config.json");
 
         if(file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
             QString jsonString = QString(R"({
@@ -23,14 +30,41 @@ public:
                 "ACCESS_TOKEN": "%3",
                 "REFRESH_TOKEN": "%4",
                 "EXPIRES_IN": %5,
-                "TOKEN_OBTAINED": %6
+                "TOKEN_OBTAINED": "%6"
             })")
             .arg(clientId,
                  clientSecret,
-                 data["access_token"].toString(),
-                 data["refresh_token"].toString(),
-                 QString::number(data["expires_in"].toInt()),
-                 QDateTime::currentDateTimeUtc().toString()
+                 accessToken,
+                 refreshToken,
+                 QString::number(expiresAt),
+                 tokenObtained.toString(Qt::ISODate)
+            );
+
+            file.write(jsonString.toUtf8());
+            file.close();
+        }
+    }
+
+    void setAccessToken(QString token) {
+        accessToken = token;
+
+        QFile file(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/config.json");
+
+        if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            QString jsonString = QString(R"({
+                "CLIENT_ID": "%1",
+                "CLIENT_SECRET": "%2",
+                "ACCESS_TOKEN": "%3",
+                "REFRESH_TOKEN": "%4",
+                "EXPIRES_IN": %5,
+                "TOKEN_OBTAINED": "%6"
+            })")
+            .arg(clientId,
+                 clientSecret,
+                 token,
+                 refreshToken,
+                 QString::number(expiresAt),
+                 tokenObtained.toString(Qt::ISODate)
             );
 
             file.write(jsonString.toUtf8());
@@ -47,21 +81,34 @@ public:
 
 private:
     Config() {
-        QFile file(":/config.json");
+        QString dirPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+        QString filePath = dirPath + "/config.json";
 
-        if (!file.open(QIODevice::ReadOnly)) {
+        if (!QDir().exists(dirPath)) {
+            qDebug() << "creaded dir";
+            QDir().mkpath(dirPath);
+        }
+        if (!QFile::exists(filePath)) {
+            qDebug() << "created file";
+            QFile::copy(":/config.json", filePath);
+        }
+
+        QFile file(filePath);
+        QFile config(":/config.json");
+
+        if (!file.open(QIODevice::ReadOnly) || !config.open(QIODevice::ReadOnly)) {
             qWarning() << "Cannot open config.json resource!";
             return;
         }
 
-        QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-        QJsonObject object = doc.object();
+        QJsonObject object = QJsonDocument::fromJson(file.readAll()).object();
+        QJsonObject clientData = QJsonDocument::fromJson(config.readAll()).object();
 
-        clientId = object["CLIENT_ID"].toString();
-        clientSecret = object["CLIENT_SECRET"].toString();
-        accessToken = object["ACCESS_TOKEN"].toString();
+        clientId = clientData["CLIENT_ID"].toString();
+        clientSecret = clientData["CLIENT_SECRET"].toString();
+        accessToken = clientData["ACCESS_TOKEN"].toString();
         refreshToken = object["REFRESH_TOKEN"].toString();
-        expiresAt = object["EXPIRES_AT"].toInt();
+        expiresAt = object["EXPIRES_IN"].toInt();
         tokenObtained = QDateTime::fromString(object["TOKEN_OBTAINED"].toString(), Qt::ISODate);
     }
 

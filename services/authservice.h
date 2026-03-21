@@ -15,8 +15,13 @@ class AuthService : public QObject {
 
     public:
         explicit AuthService(QObject *parent = nullptr);
+
         void refresh();
         void auth();
+
+        void startOAuthFlow();
+        void exchangeCodeForToken(QString code);
+
         QString accessToken;
 
     protected:
@@ -24,11 +29,13 @@ class AuthService : public QObject {
 
     signals:
         void authorized();
+        void tokenReady(QString token);
 
     private:
         void setToken(QString token, TokenType type);
         QString refreshToken;
         QNetworkAccessManager manager;
+        QString m_accessToken;
 };
 
 #endif // AUTHSERVICE_H

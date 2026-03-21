@@ -25,6 +25,7 @@ struct Track {
     int releaseYear;
     int repostsCount;
     int userPlaybackCount;
+    int id;
     bool commentable;
     bool downloadable;
     bool streamable;

@@ -3,18 +3,13 @@ import QtMultimedia
 import QtQuick.Controls
 
 Window {
-    width: 640
-    height: 480
+    width: 820
+    height: 640
     visible: true
     color: '#000000'
 
-    Text {
-        text: "title"
-        color: 'green'
-        font.pixelSize: 32
-    }
-
     Column {
+        width: parent.width
         spacing: 20
         anchors.centerIn: parent
 
@@ -22,7 +17,7 @@ Window {
             text: "play track"
             onClicked: {
                 console.log("STREAM: ", trackService.streamUrl)
-                player.play()
+                trackService.play()
             }
         }
 
@@ -42,9 +37,8 @@ Window {
             }
         }
 
-
         Rectangle {
-            width: 640
+            width: parent.width
             height: 120
             color: "#181818"
             radius: 8
@@ -54,7 +48,6 @@ Window {
                 source: trackService.streamUrl
                 audioOutput: AudioOutput {
                     id: audio
-                    volume: .5
                 }
             }
 
@@ -63,14 +56,32 @@ Window {
                 anchors.margins: 15
                 spacing: 15
 
+                Column {
+                    spacing: 10
+
+                    Image {
+                        source: trackService.artworkUrl
+                        sourceSize.width: 50
+                        sourceSize.height: 50
+                        width: 50
+                        height: 50
+                    }
+
+                    Text {
+                        text: trackService.title
+                        color: "white"
+                        font.pixelSize: 18
+                    }
+                }
+
                 Button {
                     text: player.playbackState === MediaPlayer.PlayingState ? "Pause" : "Play"
 
                     onClicked: {
                         if (player.playbackState === MediaPlayer.PlayingState)
-                            player.pause()
+                            trackService.pause()
                         else
-                            player.play()
+                            trackService.play()
                     }
                 }
 
@@ -78,15 +89,13 @@ Window {
                     id: progress
                     width: 250
                     from: 0
-                    to: player.duration
-
-                    value: player.position
-
-                    onMoved: player.setPosition(value)
+                    to: trackService.duration
+                    value: trackService.position
+                    onMoved: trackService.seek(value)
                 }
 
                 Text {
-                    text: Math.floor(player.position / 1000) + "s"
+                    text: Math.floor(trackService.position / 1000) + "s"
                     color: "white"
                 }
 
@@ -96,11 +105,17 @@ Window {
                     from: 0
                     to: 1
                     value: 0.2
+                    onMoved: trackService.setVolume(value)
                 }
             }
 
             Connections {
                 target: trackService
+                function onPositionChanged() {
+                    progress.value = trackService.position
+                    progress.to = trackService.duration
+                }
+
                 function onTrackSetted() {
                     player.source = trackService.streamUrl
                     player.play()

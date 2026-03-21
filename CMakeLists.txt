@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick)
+find_package(Qt6 REQUIRED COMPONENTS Multimedia)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -27,9 +28,9 @@ qt_add_qml_module(appsoundcloud_qt
         SOURCES structs/track.h
         SOURCES services/config.h
         SOURCES
+        SOURCES servers/oauthserver.h servers/oauthserver.cpp
 )
 
-# добавляем ресурсы (config.json)
 qt_add_resources(appsoundcloud_qt "app_resources"
     PREFIX "/"
     FILES
@@ -37,7 +38,9 @@ qt_add_resources(appsoundcloud_qt "app_resources"
 )
 
 target_link_libraries(appsoundcloud_qt
-    PRIVATE Qt6::Quick
+    PRIVATE
+        Qt6::Quick
+        Qt6::Multimedia
 )
 
 set_target_properties(appsoundcloud_qt PROPERTIES

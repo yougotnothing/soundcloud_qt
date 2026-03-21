@@ -6,8 +6,18 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include "authservice.h"
+#include "config.h"
 
-TrackService::TrackService(QObject *parent) : QObject(parent), authService(this) {}
+TrackService::TrackService(QObject *parent) : QObject(parent), authService(this) {
+    player = new QMediaPlayer(this);
+    audioOutput = new QAudioOutput(this);
+
+    player->setAudioOutput(audioOutput);
+    audioOutput->setVolume(0.3);
+
+    connect(player, &QMediaPlayer::positionChanged, this, &TrackService::positionChanged);
+    connect(player, &QMediaPlayer::durationChanged, this, &TrackService::durationChanged);
+}
 
 Track TrackService::parseTrack(QByteArray data) {
     Track track;
@@ -22,6 +32,7 @@ Track TrackService::parseTrack(QByteArray data) {
         return track;
     }
 
+    track.id = trackData["id"].toInt();
     track.artworkUrl = trackData["artwork_url"].toString();
     track.uri = trackData["uri"].toString();
     track.createdAt = trackData["created_at"].toString();
@@ -32,8 +43,9 @@ Track TrackService::parseTrack(QByteArray data) {
     track.playbackCount = trackData["playback_count"].toInt();
     track.releaseDay = trackData["release_day"].toInt();
     track.releaseMonth = trackData["release_month"].toInt();
+    track.title = trackData["title"].toString();
 
-    resolveStream(trackData["stream_url"].toString());
+    resolveStream(trackData["id"].toInt());
 
     emit trackSetted(this->track);
 
@@ -46,50 +58,110 @@ void TrackService::setTrack(const Track &data) {
 }
 
 void TrackService::findTrack(QString name) {
-    QNetworkRequest request(QUrl(SOUNDCLOUD_URL + "/tracks?q=" + name + "&limit=1"));
-    request.setRawHeader("Authorization", QString("OAuth " + authService.accessToken).toUtf8());
+    QNetworkRequest request(QUrl(SOUNDCLOUD_URL + "/tracks?q=" + name + "&limit=2"));
+    request.setRawHeader("Authorization", QString("OAuth " + Config::instance().accessToken).toUtf8());
 
     QNetworkReply *reply = manager.get(request);
 
     connect(reply, &QNetworkReply::finished, [this, reply]() {
         QByteArray data = reply->readAll();
-
-        qWarning() << data;
-
         QJsonObject object = QJsonDocument::fromJson(data).object();
 
-        this->setTrack(this->parseTrack(data));
+        if (reply->error() == QNetworkReply::NoError) {
+            qDebug() << data;
 
-        emit trackFound(track);
+            this->setTrack(this->parseTrack(data));
 
-        reply->deleteLater();
-    });
-}
-
-void TrackService::play() {
-    paused = false;
-    emit playing();
-}
-
-void TrackService::resolveStream(QString previewUrl) {
-    QNetworkRequest request((QUrl(previewUrl)));
-    request.setRawHeader("Authorization", QString("OAuth " + authService.accessToken).toUtf8());
-
-    QNetworkReply *reply = manager.get(request);
-
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        QVariant redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-
-        if (redirect.isValid()) {
-            QString streamUrl = redirect.toUrl().toString();
-
-            qDebug() << "Real Stream:" << streamUrl;
-
-            this->track.streamUrl = streamUrl;
-
-            emit trackSetted(this->track);
+            emit trackFound(track);
+        } else {
+            qWarning() << reply->errorString();
         }
 
         reply->deleteLater();
     });
+}
+
+void TrackService::resolveStream(int trackId) {
+    QString url = QString("https://api.soundcloud.com/tracks/%1/streams").arg(trackId);
+    QNetworkRequest request((QUrl(url)));
+
+    request.setRawHeader("Authorization", QString("OAuth %1").arg(Config::instance().accessToken).toUtf8());
+
+    QNetworkReply *reply = manager.get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        QJsonObject response = QJsonDocument::fromJson(reply->readAll()).object();
+
+        this->track.streamUrl = response["http_mp3_128_url"].toString();
+        writeSongFile(response["http_mp3_128_url"].toString());
+        reply->deleteLater();
+    });
+}
+
+void TrackService::writeSongFile(QString url) {
+    QNetworkRequest request((QUrl(url)));
+
+    request.setRawHeader("Authorization", QString("OAuth %1").arg(Config::instance().accessToken).toUtf8());
+
+    QNetworkReply *reply = manager.get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray data = reply->readAll();
+
+            playFromBuffer(data);
+        } else {
+            qWarning() << reply->errorString();
+        }
+    });
+}
+
+void TrackService::playFromBuffer(const QByteArray &data) {
+    if (tempFile) {
+        tempFile->close();
+        delete tempFile;
+        tempFile = nullptr;
+    }
+
+    tempFile = new QTemporaryFile(this);
+
+    if (!tempFile->open()) {
+        qWarning() << "Temp file open failed";
+        return;
+    }
+
+    tempFile->write(data);
+    tempFile->flush();
+
+    qDebug() << "Play from file:" << tempFile->fileName();
+
+    player->setSource(QUrl::fromLocalFile(tempFile->fileName()));
+    player->play();
+}
+
+void TrackService::playFromUrl(const QString &url) {
+    qDebug() << "Play URL:" << url;
+
+    player->setSource(QUrl(url));
+    player->play();
+}
+
+void TrackService::play() {
+    player->play();
+}
+
+void TrackService::pause() {
+    player->pause();
+}
+
+void TrackService::stop() {
+    player->stop();
+}
+
+void TrackService::seek(qint64 pos) {
+    player->setPosition(pos);
+}
+
+void TrackService::setVolume(float volume) {
+    audioOutput->setVolume(volume);
 }
