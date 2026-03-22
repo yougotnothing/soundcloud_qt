@@ -1,34 +1,40 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QFile>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QDebug>
 #include "services/trackservice.h"
 #include "services/authservice.h"
 #include "servers/oauthserver.h"
+#include "services/PlaylistsService.h"
 
 int main(int argc, char *argv[])
 {
-    QGuiApplication app(argc, argv);
+    const QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
     TrackService trackService;
     AuthService authService;
-    OAuthServer oAuthServer;
+    const OAuthServer oAuthServer;
+    PlaylistsService playlistsService;
 
-    authService.startOAuthFlow();
+    QObject::connect(&authService, &AuthService::hasNoRefreshToken, [&] {
+        authService.startOAuthFlow();
+    });
 
-    engine.rootContext()->setContextProperty("trackService", &trackService);
-    engine.rootContext()->setContextProperty("authService", &authService);
-
-    QObject::connect(&oAuthServer, &OAuthServer::codeRecieved, [&](QString code) {
+    QObject::connect(&oAuthServer, &OAuthServer::codeRecieved, [&](const QString& code) {
         authService.exchangeCodeForToken(code);
     });
 
-    QObject::connect(&authService, &AuthService::tokenReady, [&](QString token){
-        qDebug() << "Token is ready, now we can play tracks!";
+    QObject::connect(&authService, &AuthService::tokenReady, [&]{
+        qDebug() << "authService.tokenReady";
+        playlistsService.getPlaylistsPreview();
     });
+
+    authService.init();
+
+    engine.rootContext()->setContextProperty("trackService", &trackService);
+    engine.rootContext()->setContextProperty("authService", &authService);
+    engine.rootContext()->setContextProperty("playlistsService", &playlistsService);
 
     QObject::connect(
         &engine,

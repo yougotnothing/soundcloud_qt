@@ -12,23 +12,39 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appsoundcloud_qt
     main.cpp
+        services/PlaylistsService.cpp
+        services/PlaylistsService.h
+        structs/Playlist.h
 )
+
+file(GLOB_RECURSE QML_FILES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/components/*.qml"
+)
+
+# Convert absolute paths to relative paths for Qt resources
+file(RELATIVE_PATH _qml_base "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+set(QML_FILES_RELATIVE "")
+foreach(f ${QML_FILES})
+    file(RELATIVE_PATH rel "${CMAKE_CURRENT_SOURCE_DIR}" "${f}")
+    list(APPEND QML_FILES_RELATIVE "${rel}")
+endforeach()
+set(QML_FILES ${QML_FILES_RELATIVE})
 
 qt_add_qml_module(appsoundcloud_qt
     URI soundcloud_qt
     VERSION 1.0
     QML_FILES
         Main.qml
-        SOURCES services/authservice.h services/authservice.cpp
-        SOURCES services/userservice.h services/userservice.cpp
-        SOURCES structs/user.h
-        SOURCES
-        SOURCES data/consts.h
-        SOURCES services/trackservice.h services/trackservice.cpp
-        SOURCES structs/track.h
-        SOURCES services/config.h
-        SOURCES
-        SOURCES servers/oauthserver.h servers/oauthserver.cpp
+        ${QML_FILES}
+    SOURCES
+        services/authservice.h services/authservice.cpp
+        services/userservice.h services/userservice.cpp
+        structs/user.h
+        data/consts.h
+        services/trackservice.h services/trackservice.cpp
+        structs/track.h
+        services/config.h
+        servers/oauthserver.h servers/oauthserver.cpp
 )
 
 qt_add_resources(appsoundcloud_qt "app_resources"

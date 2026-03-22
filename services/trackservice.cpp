@@ -19,9 +19,9 @@ TrackService::TrackService(QObject *parent) : QObject(parent), authService(this)
     connect(player, &QMediaPlayer::durationChanged, this, &TrackService::durationChanged);
 }
 
-Track TrackService::parseTrack(QByteArray data) {
+Track TrackService::parseTrack(const QByteArray& data) {
     Track track;
-    QJsonDocument parsedData = QJsonDocument::fromJson(data);
+    const QJsonDocument parsedData = QJsonDocument::fromJson(data);
     QJsonArray object = parsedData.array();
     QJsonObject trackData = object[0].toObject();
 
@@ -57,15 +57,14 @@ void TrackService::setTrack(const Track &data) {
     emit trackSetted(track);
 }
 
-void TrackService::findTrack(QString name) {
+void TrackService::findTrack(const QString& name) {
     QNetworkRequest request(QUrl(SOUNDCLOUD_URL + "/tracks?q=" + name + "&limit=2"));
     request.setRawHeader("Authorization", QString("OAuth " + Config::instance().accessToken).toUtf8());
 
     QNetworkReply *reply = manager.get(request);
 
     connect(reply, &QNetworkReply::finished, [this, reply]() {
-        QByteArray data = reply->readAll();
-        QJsonObject object = QJsonDocument::fromJson(data).object();
+        const QByteArray data = reply->readAll();
 
         if (reply->error() == QNetworkReply::NoError) {
             qDebug() << data;
@@ -98,8 +97,8 @@ void TrackService::resolveStream(int trackId) {
     });
 }
 
-void TrackService::writeSongFile(QString url) {
-    QNetworkRequest request((QUrl(url)));
+void TrackService::writeSongFile(const QString& url) {
+    QNetworkRequest request{QUrl(url)};
 
     request.setRawHeader("Authorization", QString("OAuth %1").arg(Config::instance().accessToken).toUtf8());
 
@@ -107,7 +106,7 @@ void TrackService::writeSongFile(QString url) {
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() == QNetworkReply::NoError) {
-            QByteArray data = reply->readAll();
+            const QByteArray data = reply->readAll();
 
             playFromBuffer(data);
         } else {
@@ -139,29 +138,29 @@ void TrackService::playFromBuffer(const QByteArray &data) {
     player->play();
 }
 
-void TrackService::playFromUrl(const QString &url) {
+void TrackService::playFromUrl(const QString &url) const {
     qDebug() << "Play URL:" << url;
 
     player->setSource(QUrl(url));
     player->play();
 }
 
-void TrackService::play() {
+void TrackService::play() const {
     player->play();
 }
 
-void TrackService::pause() {
+void TrackService::pause() const {
     player->pause();
 }
 
-void TrackService::stop() {
+void TrackService::stop() const {
     player->stop();
 }
 
-void TrackService::seek(qint64 pos) {
-    player->setPosition(pos);
+void TrackService::seek(const qint64 position) const {
+    player->setPosition(position);
 }
 
-void TrackService::setVolume(float volume) {
+void TrackService::setVolume(float volume) const {
     audioOutput->setVolume(volume);
 }

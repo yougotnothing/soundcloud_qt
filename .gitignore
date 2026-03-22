@@ -2,3 +2,5 @@
 /build
 .env
 config.json
+/cmake-build-debug
+/.idea

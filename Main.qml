@@ -1,6 +1,7 @@
 import QtQuick
 import QtMultimedia
 import QtQuick.Controls
+import './components' as Components
 
 Window {
     width: 820
@@ -8,8 +9,16 @@ Window {
     visible: true
     color: '#000000'
 
+    Components.Playlists {
+        width: 360
+        height: parent.height
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 20
+    }
+
     Column {
-        width: parent.width
+        width: 920
         spacing: 20
         anchors.centerIn: parent
 
@@ -21,21 +30,7 @@ Window {
             }
         }
 
-        TextInput {
-            id: input
-            text: "placeholder"
-            color: 'white'
-            width: 200
-            height: 30
-        }
-
-        Button {
-            text: "find"
-            onClicked: {
-                console.log("you entered: ", input.text)
-                trackService.findTrack(input.text)
-            }
-        }
+        Components.Search {}
 
         Rectangle {
             width: parent.width
@@ -52,7 +47,7 @@ Window {
             }
 
             Row {
-                anchors.fill: parent
+                width: parent.width
                 anchors.margins: 15
                 spacing: 15
 

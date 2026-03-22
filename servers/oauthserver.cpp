@@ -21,14 +21,16 @@ OAuthServer::OAuthServer(QObject *parent) : QObject(parent) {
             qDebug() << "Request:" << reqStr;
 
             if (reqStr.startsWith("GET /callback?")) {
-                QString query = reqStr.split(" ")[1].mid(strlen("/callback?"));
-                QUrlQuery q(query);
+                const QString query = reqStr.split(" ")[1].mid(strlen("/callback?"));
+                const QUrlQuery q(query);
+
                 code = q.queryItemValue("code");
+                
                 qDebug() << "OAuth Code recieved:" << code;
 
                 emit codeRecieved(code);
 
-                QByteArray response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+                const QByteArray response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
                                       "<html><body>You can close this window now.</body></html>";
 
                 socket->write(response);

@@ -9,11 +9,13 @@
 UserService::UserService(QObject *parent) : QObject(parent) {}
 
 void UserService::getUser() {
-    QNetworkRequest request(QUrl(SOUNDCLOUD_URL + "/me"));
+    const QNetworkRequest request(QUrl(SOUNDCLOUD_URL + "/me"));
     QNetworkReply *reply = manager.get(request);
 
     connect(reply, &QNetworkReply::finished, [this, reply]() {
-        QByteArray data = reply->readAll();
+        const QByteArray data = reply->readAll();
+
+        qDebug() << "User data:" << data;
 
         emit gotUser();
 

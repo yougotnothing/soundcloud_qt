@@ -18,21 +18,20 @@ class TrackService : public QObject {
     public:
         Q_INVOKABLE Track track;
         explicit TrackService(QObject *parent = nullptr);
-        Q_INVOKABLE void play();
-        Q_INVOKABLE void pause();
-        Q_INVOKABLE void stop();
-        Q_INVOKABLE void seek(qint64 position);
-        Q_INVOKABLE void setVolume(float volume);
-        Q_INVOKABLE void findTrack(QString name);
-        bool paused;
-        int volume;
+        Q_INVOKABLE void play() const;
+        Q_INVOKABLE void pause() const;
+        Q_INVOKABLE void stop() const;
+        Q_INVOKABLE void seek(qint64 position) const;
+        Q_INVOKABLE void setVolume(float volume) const;
+        Q_INVOKABLE void findTrack(const QString& name);
+        bool paused{};
+        int volume{};
 
-        qint64 position() const { return player->position(); };
-        qint64 duration() const { return player->duration(); };
-
-        QString streamUrl() const { return track.streamUrl; };
-        QString artworkUrl() const { return track.artworkUrl; };
-        QString title() const { return track.title; };
+        [[nodiscard]] qint64 position() const { return player->position(); };
+        [[nodiscard]] qint64 duration() const { return player->duration(); };
+        [[nodiscard]] QString streamUrl() const { return track.streamUrl; };
+        [[nodiscard]] QString artworkUrl() const { return track.artworkUrl; };
+        [[nodiscard]] QString title() const { return track.title; };
 
         Q_PROPERTY(QString streamUrl READ streamUrl NOTIFY trackSetted);
         Q_PROPERTY(QString artworkUrl READ artworkUrl NOTIFY trackSetted);
@@ -50,13 +49,13 @@ class TrackService : public QObject {
         QAudioOutput *audioOutput;
         QTemporaryFile *tempFile = nullptr;
         QNetworkAccessManager manager;
-        Track parseTrack(QByteArray data);
+        Track parseTrack(const QByteArray& data);
         void setTrack(const Track &data);
         AuthService authService;
         void resolveStream(int trackId);
-        void playFromUrl(const QString &url);
+        void playFromUrl(const QString &url) const;
         void playFromBuffer(const QByteArray &data);
-        void writeSongFile(QString url);
+        void writeSongFile(const QString& url);
 };
 
 #endif // TRACKSERVICE_H
