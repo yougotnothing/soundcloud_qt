@@ -30,15 +30,26 @@ foreach(f ${QML_FILES})
 endforeach()
 set(QML_FILES ${QML_FILES_RELATIVE})
 
+set_source_files_properties(
+    components/Router.qml
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
+)
+
 qt_add_qml_module(appsoundcloud_qt
     URI soundcloud_qt
     VERSION 1.0
     QML_FILES
         Main.qml
         ${QML_FILES}
+        pages/MainPage.qml
+        pages/Playlist.qml
+        pages/Profile.qml
+        pages/SearchPage.qml
+        pages/Song.qml
     SOURCES
         services/authservice.h services/authservice.cpp
         services/userservice.h services/userservice.cpp
+        services/searchservice.h services/searchservice.cpp
         structs/user.h
         data/consts.h
         services/trackservice.h services/trackservice.cpp

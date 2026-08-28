@@ -3,8 +3,7 @@ import QtQuick.Controls
 
 Item {
     id: playlistRoot
-    width: 360
-    height: 420
+    anchors.fill: parent
 
     Text {
         id: emptyMessage
@@ -16,31 +15,54 @@ Item {
     }
 
     ListView {
-        anchors.fill: parent
+        height: parent.height
+        width: 260
         spacing: 5
-        bottomMargin: 12
         model: playlistsService.playlists
+        cacheBuffer: 1000
+        reuseItems: true
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
 
-        delegate: Row {
+        delegate: Button {
             width: parent.width
             height: 80
             spacing: 10
-
-            Rectangle {
-                width: 70; height: 70
-                radius: 8
-                clip: true
-
-                Image {
-                    anchors.fill: parent
-                    source: modelData.artworkUrl
-                    fillMode: Image.PreserveAspectCrop
-                }
+            onClicked: () => {
+                Router.go("qrc:/qt/qml/soundcloud_qt/pages/Playlist.qml", { playlistId: modelData.urn })
             }
 
-            Column {
-                spacing: 5
-                Text { text: modelData.title; color: "white" }
+            Row {
+                height: 80
+                width: 260
+
+                Rectangle {
+                    width: 80
+                    height: 80
+                    radius: 4
+                    color: "transparent"
+                    clip: true
+                    antialiasing: true
+
+                    Image {
+                        anchors.fill: parent
+                        source: modelData.artworkUrl
+                        fillMode: Image.PreserveAspectCrop
+                    }
+                }
+
+                Column {
+                    spacing: 5
+
+                    Text { 
+                        text: modelData.title;
+                        color: "white"
+                        width: 160
+                        wrapMode: Text.NoWrap
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
+                }
             }
         }
     }

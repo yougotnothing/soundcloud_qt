@@ -1,5 +1,10 @@
 <RCC>
     <qresource prefix="/">
         <file>config.json</file>
+        <file>pages/MainPage.qml</file>
+        <file>pages/Playlist.qml</file>
+        <file>pages/Profile.qml</file>
+        <file>pages/Search.qml</file>
+        <file>pages/Song.qml</file>
     </qresource>
 </RCC>

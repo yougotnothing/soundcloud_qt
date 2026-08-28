@@ -1,44 +1,45 @@
 #include "oauthserver.h"
-#include <QTcpSocket>
-#include <QTcpServer>
-#include <QObject>
-#include <QUrlQuery>
 #include <QDebug>
+#include <QObject>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QUrlQuery>
 
 OAuthServer::OAuthServer(QObject *parent) : QObject(parent) {
-    if (!server.listen(QHostAddress::LocalHost, 1212)) {
-        qWarning() << "Cannot start server!";
-        return;
-    }
+  if (!server.listen(QHostAddress::LocalHost, 1212)) {
+    qWarning() << "Cannot start server!";
+    return;
+  }
 
-    connect(&server, &QTcpServer::newConnection, this, [this]() {
-        QTcpSocket* socket = server.nextPendingConnection();
+  connect(&server, &QTcpServer::newConnection, this, [this]() {
+    QTcpSocket *socket = server.nextPendingConnection();
 
-        connect(socket, &QTcpSocket::readyRead, [this, socket]() {
-            QByteArray request = socket->readAll();
-            QString reqStr(request);
+    connect(socket, &QTcpSocket::readyRead, [this, socket]() {
+      QByteArray request = socket->readAll();
+      QString reqStr(request);
 
-            qDebug() << "Request:" << reqStr;
+      qDebug() << "Request:" << reqStr;
 
-            if (reqStr.startsWith("GET /callback?")) {
-                const QString query = reqStr.split(" ")[1].mid(strlen("/callback?"));
-                const QUrlQuery q(query);
+      if (reqStr.startsWith("GET /callback?")) {
+        const QString query = reqStr.split(" ")[1].mid(strlen("/callback?"));
+        const QUrlQuery q(query);
 
-                code = q.queryItemValue("code");
-                
-                qDebug() << "OAuth Code recieved:" << code;
+        code = q.queryItemValue("code");
 
-                emit codeRecieved(code);
+        qDebug() << "OAuth Code recieved:" << code;
 
-                const QByteArray response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
-                                      "<html><body>You can close this window now.</body></html>";
+        emit codeRecieved(code);
 
-                socket->write(response);
-                socket->flush();
-                socket->disconnectFromHost();
-            }
-        });
+        const QByteArray response =
+            "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+            "<html><body>You can close this window now.</body></html>";
+
+        socket->write(response);
+        socket->flush();
+        socket->disconnectFromHost();
+      }
     });
+  });
 
-    qDebug() << "Server listening at http://localhost:1212/callback";
+  qDebug() << "Server listening at http://localhost:1212/callback";
 }

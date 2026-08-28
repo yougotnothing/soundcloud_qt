@@ -1,122 +1,67 @@
 import QtQuick
-import QtMultimedia
 import QtQuick.Controls
+import QtQuick.Layouts
+import QtQuick.Window
 import './components' as Components
+import './pages' as Pages
 
-Window {
-    width: 820
-    height: 640
+ApplicationWindow {
+    id: window
+    minimumWidth: 920
+    minimumHeight: 640
     visible: true
-    color: '#000000'
+    color: 'transparent'
+    flags: Qt.FramelessWindowHint
 
-    Components.Playlists {
-        width: 360
+    Rectangle {
+        width: parent.width
         height: parent.height
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.margins: 20
-    }
+        color: '#151515'
+        radius: 24
 
-    Column {
-        width: 920
-        spacing: 20
-        anchors.centerIn: parent
+        Components.Navbar {
+            id: navbar
+            anchors.top: parent.top
+            anchors.right: parent.right
+            height: 64
+            width: parent.width
+            window: window
+            z:100
+        }
 
-        Button {
-            text: "play track"
-            onClicked: {
-                console.log("STREAM: ", trackService.streamUrl)
-                trackService.play()
+        RowLayout {
+            anchors.top: navbar.bottom
+            anchors.bottom: player.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 20
+            spacing: 20
+
+            Components.Playlists {
+                id: playlists
+                Layout.preferredWidth: 200
+                Layout.fillHeight: true
+            }
+
+            StackView {
+                id: stack
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                initialItem: Qt.resolvedUrl("pages/MainPage.qml")
+
+                Component.onCompleted: {
+                    Components.Router.stack = stack
+                }
             }
         }
 
-        Components.Search {}
-
-        Rectangle {
-            width: parent.width
+        Components.Player {
+            id: player
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
             height: 120
-            color: "#181818"
-            radius: 8
-
-            MediaPlayer {
-                id: player
-                source: trackService.streamUrl
-                audioOutput: AudioOutput {
-                    id: audio
-                }
-            }
-
-            Row {
-                width: parent.width
-                anchors.margins: 15
-                spacing: 15
-
-                Column {
-                    spacing: 10
-
-                    Image {
-                        source: trackService.artworkUrl
-                        sourceSize.width: 50
-                        sourceSize.height: 50
-                        width: 50
-                        height: 50
-                    }
-
-                    Text {
-                        text: trackService.title
-                        color: "white"
-                        font.pixelSize: 18
-                    }
-                }
-
-                Button {
-                    text: player.playbackState === MediaPlayer.PlayingState ? "Pause" : "Play"
-
-                    onClicked: {
-                        if (player.playbackState === MediaPlayer.PlayingState)
-                            trackService.pause()
-                        else
-                            trackService.play()
-                    }
-                }
-
-                Slider {
-                    id: progress
-                    width: 250
-                    from: 0
-                    to: trackService.duration
-                    value: trackService.position
-                    onMoved: trackService.seek(value)
-                }
-
-                Text {
-                    text: Math.floor(trackService.position / 1000) + "s"
-                    color: "white"
-                }
-
-                Slider {
-                    id: volumeSlider
-                    width: 80
-                    from: 0
-                    to: 1
-                    value: 0.2
-                    onMoved: trackService.setVolume(value)
-                }
-            }
-
-            Connections {
-                target: trackService
-                function onPositionChanged() {
-                    progress.value = trackService.position
-                    progress.to = trackService.duration
-                }
-
-                function onTrackSetted() {
-                    player.source = trackService.streamUrl
-                    player.play()
-                    trackService.play()
-                }
-            }
+            z: 100
         }
     }
 }

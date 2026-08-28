@@ -4,3 +4,6 @@
 config.json
 /cmake-build-debug
 /.idea
+
+/.DS_Store
+.DS_Store

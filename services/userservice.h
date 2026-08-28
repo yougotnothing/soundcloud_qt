@@ -1,26 +1,28 @@
 #ifndef USERSERVICE_H
 #define USERSERVICE_H
 
-#include <QString>
-#include <QObject>
 #include "structs/user.h"
 #include <QNetworkAccessManager>
+#include <QObject>
+#include <QString>
 
 class UserService : QObject {
-    Q_OBJECT
+  Q_OBJECT
 
-    public:
-        explicit UserService(QObject *parent = nullptr);
-        User user;
-        void getUser();
-        void changeName(QString name);
+public:
+  explicit UserService(QObject *parent = nullptr);
+  User user;
+  void getUser();
+  void changeName(QString name);
+  void getFeed();
 
-    signals:
-        void gotUser();
-        void changedName();
+signals:
+  void gotUser();
+  void gotFeed();
+  void changedName();
 
-    private:
-        QNetworkAccessManager manager;
+private:
+  QNetworkAccessManager manager;
 };
 
 #endif // USERSERVICE_H
